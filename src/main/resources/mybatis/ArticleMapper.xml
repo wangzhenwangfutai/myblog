@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+  
+<mapper namespace="com.ziqiang.mapper.ArticleMapper">
+	
+	<resultMap type="com.ziqiang.model.Article" id="Article">
+		<id column="id" property="id" />
+		<result column="categoryId" property="categoryId" />
+		<result column="categoryName" property="categoryName" />
+		<result column="aliasName" property="aliasName" />
+		<result column="title" property="title" />
+		<result column="author" property="author" />
+		<result column="statue" property="statue" />
+		<result column="showCount" property="showCount" />
+		<result column="content" property="content"/>
+	</resultMap>
+	
+	<select id="getArticleCount" parameterType="map" resultType="int">
+		select count(1) from t_article a 
+		inner join t_category c on a.categoryId = c.id 
+		where 1 = 1 
+		<if test="null != article.tagId and '-1' != article.tagId">
+			and exists (select 1 from t_article_tag at where at.articleId = a.id and at.tagId = #{article.tagId})
+		</if>
+		<if test="null != article.title and '' != article.title">
+			<![CDATA[ and a.title like concat('%', #{article.title}, '%')]]>
+		</if>
+		<if test="null != article.categoryId and '-1' != article.categoryId">
+			and a.categoryId = #{article.categoryId} 
+		</if>
+	</select>
+	
+	<select id="getAllArticleCount" parameterType="map" resultType="int">
+		select count(1) from t_article a 
+		inner join t_category c on a.categoryId = c.id 
+		<if test="categoryId != null and categoryId !='-1'">
+			and c.id = #{categoryId}
+		</if>
+		where 1 = 1 
+	</select>
+
+	<select id="getLastArticleList" parameterType="map" resultType="com.ziqiang.model.Article">
+		select DATE_FORMAT(a.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+		a.*,c.categoryName,c.aliasName from t_article a 
+		inner join t_category c on a.categoryId = c.id
+		where 1 = 1
+		and a.statue = 1
+		<if test="categoryId != null and categoryId !='-1'">
+			 and c.id = #{categoryId}
+		</if>
+		<if test="articleId != null">
+			<![CDATA[and a.id < #{articleId}]]>
+		</if>
+		order by a.id desc 
+		limit 10 
+	</select>
+	
+	<select id="getNextArticle" parameterType="map" resultType="com.ziqiang.model.Article">
+		select DATE_FORMAT(a.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+		a.*,c.categoryName,c.aliasName from t_article a 
+		inner join t_category c on a.categoryId = c.id 
+		where 1 = 1  and a.statue = 1 
+		<if test="categoryId != null and categoryId !='-1'">
+			and c.id = #{categoryId}
+		</if>
+		<if test="articleId != null">
+			<![CDATA[and a.id > #{articleId}]]>
+		</if>
+		order by a.id asc 
+		limit 1 
+	</select>
+	
+	<select id="getBeforeArticle" parameterType="map" resultMap="Article">
+		select DATE_FORMAT(a.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+		a.*,c.categoryName,c.aliasName from t_article a 
+		inner join t_category c on a.categoryId = c.id 
+		where 1 = 1  and a.statue = 1 
+		<if test="categoryId != null and categoryId !='-1'">
+			and c.id = #{categoryId}
+		</if>
+		<if test="articleId != null">
+			<![CDATA[and a.id < #{articleId}]]>
+		</if>
+		order by a.id desc  
+		limit 1 
+	</select>
+
+	<select id="getRelationArticleList" parameterType="map" resultMap="Article">
+		select DATE_FORMAT(a.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+		a.*,c.categoryName,c.aliasName from t_article a 
+		inner join t_category c on a.categoryId = c.id 
+		where 1 = 1  and a.statue = 1
+		<if test="categoryId != null and categoryId !='-1'">
+			and c.id = #{categoryId}
+		</if>
+		<if test="articleId != null">
+			<![CDATA[and a.id != #{articleId}]]>
+		</if>
+		order by rand() LIMIT 4 
+	</select>
+	
+	<select id="getArticleById"  resultMap="Article">
+		select DATE_FORMAT(a.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+		a.*,c.id as categoryId,c.categoryName,c.aliasName from t_article a 
+		inner join t_category c on a.categoryId = c.id 
+		where a.id = #{id}
+	</select>
+	
+	<select id="getArticleImageUrl" parameterType="string" resultType="string">
+		select imageUrl from t_article_image where articleId = #{id} limit 1
+	</select>
+	
+	<select id="getArticleList" parameterType="map" resultType="com.ziqiang.model.Article">
+		select DATE_FORMAT(a.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+		a.*,c.categoryName,c.aliasName from t_article a 
+		inner join t_category c on a.categoryId = c.id 
+		where 1 = 1 
+		 <if test="null != article.tagId and '-1' != article.tagId and '0' != article.tagId">
+			and exists (select 1 from t_article_tag at where at.articleId = a.id and at.tagId = #{article.tagId})
+		</if>
+		<if test="null != article.title and '' != article.title">
+			<![CDATA[ and a.title like concat('%', #{article.title}, '%')]]>
+		</if>
+		<if test="null != article.statue">
+		    and a.statue = #{article.statue}
+		</if>
+		<if test="null != article.categoryId and '-1' != article.categoryId and '0' != article.categoryId">
+			and a.categoryId = #{article.categoryId} 
+		</if>
+		order by a.id desc 
+		limit #{start},#{limit}
+	</select>
+	
+	<select id="getVueAritcleList" parameterType="map" resultType="com.ziqiang.model.Article">
+	    select DATE_FORMAT(a.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+		a.*,c.categoryName,c.aliasName from t_article a 
+		inner join t_category c on a.categoryId = c.id 
+		<where>
+		<if test="null != article.title and '' != article.title">
+			<![CDATA[ and a.title like concat('%', #{article.title}, '%')]]>
+		</if>
+		<if test="null != article.statue">
+		   <![CDATA[  and a.statue = #{article.statue}]]>
+		</if>
+		</where>
+	    order by a.id desc 
+		limit #{start},#{limit}
+	</select>
+	
+	
+	
+	<select id="getAllArticleList" parameterType="map" resultType="com.ziqiang.model.Article">
+		select * from t_article  
+		order by id desc
+	</select>
+	
+	<select id="getAllArticle" resultType="INTEGER">
+	   select count(*) from t_article  
+	   order by id desc
+	</select>
+	
+	<insert id="addArticle" parameterType="com.ziqiang.model.Article" >
+		<![CDATA[
+			insert into t_article 
+			(categoryId,title,content,createTime,showCount,statue,description) 
+				values 
+			(#{categoryId},#{title},#{content},now(),0,0,#{description})
+		]]> 
+		<selectKey resultType="int" keyProperty="id">
+			<![CDATA[
+			SELECT LAST_INSERT_ID() as id 
+			]]> 
+		</selectKey>
+	</insert>
+	
+	<delete id="deleteArticle">
+		delete from t_article where id = #{id}	
+	</delete>
+	
+	<delete id="deleteArticleTag">
+	     DELETE from t_article_tag where articleId = #{articleId}
+	</delete>
+	
+	<update id="editArticle" parameterType="com.ziqiang.model.Article">
+		update t_article  
+			set categoryId = #{categoryId},
+			title = #{title},
+			content = #{content},
+			description = #{description} 
+		where id = #{id}
+	</update>
+	
+	<update id="updateStatue" parameterType="com.ziqiang.model.Article">
+		update t_article set statue = #{statue}  
+		where id = #{id}
+	</update>
+	
+	<update id="incrArticleShowCount" parameterType="string">
+		update t_article set showCount = showCount + 1   
+		where id = #{id}
+	</update>
+	
+	<insert id="addArticleTag" parameterType="com.ziqiang.model.Article" >
+			insert into t_article_tag  
+			(articleId,tagId) 
+				values 
+			(#{id},#{tagId})
+	</insert>
+	
+	
+	<delete id="deleteArticleTagById" parameterType="string" >
+		delete from t_article_tag where articleId = #{id}
+	</delete>
+
+	<delete id="deleteArticleImageById" parameterType="string" >
+		delete from t_article_image where articleId = #{id}
+	</delete>
+	
+	<delete id="deleteArticleImage" parameterType="com.ziqiang.model.Article" >
+		delete from t_article_image where articleId = #{id}
+	</delete>
+	
+	<insert id="addArticleImage" parameterType="com.ziqiang.model.Article" >
+			insert into t_article_image   
+			(imageUrl,articleId) 
+				values 
+			(#{imageUrl},#{id})
+	</insert>
+ <insert id="insertSelective" parameterType="com.ziqiang.model.Article" >
+    insert into t_article
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null and id > 0" >
+        id,
+      </if>
+      <if test="categoryId != null" >
+        categoryId,
+      </if>
+      <if test="title != null" >
+        title,
+      </if>
+      <if test="description != null" >
+        description,
+      </if>
+      <if test="statue != null" >
+        statue,
+      </if>
+      <if test="author != null" >
+        author,
+      </if>
+        createTime,
+        showCount,
+      <if test="content != null" >
+        content,
+      </if>
+       <if test="htmlContent != null" >
+        htmlContent,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null and id >0" >
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="categoryId != null" >
+        #{categoryId,jdbcType=INTEGER},
+      </if>
+      <if test="title != null" >
+        #{title,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null" >
+        #{description,jdbcType=LONGVARBINARY},
+      </if>
+      <if test="statue != null" >
+        #{statue,jdbcType=INTEGER},
+      </if>
+      <if test="author != null" >
+        #{author,jdbcType=VARCHAR},
+      </if>
+       now(),
+       0,
+      <if test="content != null" >
+        #{content,jdbcType=LONGVARCHAR},
+      </if>
+       <if test="htmlContent != null" >
+        #{htmlContent,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.ziqiang.model.Article" >
+    update t_article
+    <set >
+      <if test="categoryId != null" >
+        categoryId = #{categoryId,jdbcType=INTEGER},
+      </if>
+      <if test="title != null" >
+        title = #{title,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null" >
+        description = #{description,jdbcType=LONGVARBINARY},
+      </if>
+      <if test="statue != null" >
+        statue = #{statue,jdbcType=INTEGER},
+      </if>
+      <if test="author != null" >
+        author = #{author,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        createTime = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="showcount != null" >
+        showCount = #{showcount,jdbcType=INTEGER},
+      </if>
+      <if test="content != null" >
+        content = #{content,jdbcType=LONGVARBINARY},
+      </if>
+       <if test="htmlContent != null" >
+        htmlContent = #{htmlContent,jdbcType=LONGVARBINARY},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  
+</mapper>
